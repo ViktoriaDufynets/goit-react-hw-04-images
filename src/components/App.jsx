@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import ImageGallery from './ImageGallery/ImageGallery';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { imagesApi } from './serviceApi';
 import Modal from './Modal/Modal';
 import Searchbar from './Searchbar/Searchbar';
 import Button from './Button/Button';
@@ -14,54 +15,53 @@ export const App = () => {
 
   const [query, setQuery] = useState('');
   const [page, setPage] = useState(1);
-  const [imagesOnPage, setImagesOnPage] = useState(0);
   const [totalImages, setTotalImages] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [showModalR, setShowModalR] = useState(false);
-  const [images, setImages] = useState(null);
+  const [images, setImages] = useState([]);
   const [currentImageUrl, setCurrentImageUrl] = useState(null);
   const [currentImageDescription, setCurrentImageDescription] = useState(null);
+
+  const maxPage = Math.ceil(totalImages / 12);
+  const showButton = images.length > 0 && page < maxPage;
 
  useEffect(() => {
   if (query === '') {
     return;
   };
-  const KEY = "34461243-d0245d06d5a649c5dc9c3b27c";
-  const BASE_URL = "https://pixabay.com/api/"
-  const FILTER = "&image_type=photo&orientation=horizontal&safesearch=true&per_page=12";
-  const URL = `${BASE_URL}?key=${KEY}&q=${query}${FILTER}&page=${page}`;
-
-  setTimeout(() => {
-    fetch(URL).then(res => res.json()).then(({ hits, totalHits }) => {
-      const totalImages = totalHits;
-      const images = hits.map(hit => ({
+    async function newSearchRequestServer() {
+      try {
+        const response = await imagesApi({ query, page });
+        const totalImages = response.data.totalHits;
+        const images = response.data.hits.map(hit => ({
         id: hit.id,
         description: hit.tags,
         smallImage: hit.webformatURL,
         largeImage: hit.largeImageURL,
       }));
-      console.log(hits);
-      setImages(images);
+      setImages(prevState => [...prevState, ...images]);
       setTotalImages(totalImages);
-      setImagesOnPage(images.length);
-    }).catch(error => ( error ))
-    .finally(setIsLoading(false));
-  }, 3000)
+    } catch (error) {
+    } finally {
+      setIsLoading(false);
+    }
+  }
+  setIsLoading(true);
+  newSearchRequestServer();
 
-
-    setIsLoading(true);
- }, [query, page])
+}, [query, page]);
 
 
   const getSearchRequest = query => {
     setQuery(query);
+    setPage(1);
+    setImages([]);
   };
 
   const onNextFetch = () => {
     setPage(prevState => prevState + 1);
-    setImages(prevState => [...prevState, ...images]);
-    setImagesOnPage(imagesOnPage + images.length);
+
   };
 
   const toggleModal = () => {
@@ -88,12 +88,10 @@ export const App = () => {
     return (
       <div className={css.App}>
         <Searchbar onSubmit={getSearchRequest} />
-        {images && <ImageGallery images={images} openModal={openModal} />}
+        {images  &&<ImageGallery images={images} openModal={openModal} />}
         {isLoading && <Loader />}
-        {imagesOnPage >= 12 && imagesOnPage < totalImages && !isLoading &&(
-          <Button  onNextFetch={onNextFetch} />
-        )}
- {/* onClick={notify} */}
+        {showButton && <Button onNextFetch={onNextFetch} />}
+
         {showModal && (
           <Modal
             onClose={toggleModal}
@@ -101,7 +99,7 @@ export const App = () => {
             currentImageDescription={currentImageDescription}
           />
         )}
-        {imagesOnPage === 0 && !isLoading && query.length > 0 &&(
+        {totalImages===0 && query.length > 0 &&(
           <ModalR
             onClose={toggleModalR}
           />
