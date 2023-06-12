@@ -20,7 +20,6 @@ export const App = () => {
   const [showModal, setShowModal] = useState(false);
   const [showModalR, setShowModalR] = useState(false);
   const [images, setImages] = useState(null);
-  const [error, setError] = useState(null);
   const [currentImageUrl, setCurrentImageUrl] = useState(null);
   const [currentImageDescription, setCurrentImageDescription] = useState(null);
 
@@ -45,7 +44,7 @@ export const App = () => {
       console.log(hits);
       setImages(images);
       setTotalImages(totalImages);
-      imagesOnPage = setImagesOnPage(images.length);
+      setImagesOnPage(images.length);
     }).catch(error => ( error ))
     .finally(setIsLoading(false));
   }, 3000)
@@ -70,6 +69,7 @@ export const App = () => {
   };
   const toggleModalR = () => {
     setShowModalR(prevShowModalR => !prevShowModalR);
+    console.log(showModalR)
   };
 
   const openModal = e => {
